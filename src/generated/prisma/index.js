@@ -168,7 +168,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "C:\\Users\\vedan\\OneDrive\\Desktop\\Dezi-Agent-master\\src\\generated\\prisma",
+      "value": "C:\\Users\\vedan\\OneDrive\\Desktop\\My Projects\\Dezi-Agent-master\\src\\generated\\prisma",
       "fromEnvVar": null
     },
     "config": {
@@ -182,7 +182,7 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "C:\\Users\\vedan\\OneDrive\\Desktop\\Dezi-Agent-master\\prisma\\schema.prisma",
+    "sourceFilePath": "C:\\Users\\vedan\\OneDrive\\Desktop\\My Projects\\Dezi-Agent-master\\prisma\\schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {

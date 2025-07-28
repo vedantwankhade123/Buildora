@@ -10,6 +10,7 @@ const nextConfig: NextConfig = {
   },
   output: 'standalone',
   trailingSlash: true,
+  serverExternalPackages: ['@prisma/client'],
   images: {
     unoptimized: true,
     remotePatterns: [
