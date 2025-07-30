@@ -41,7 +41,6 @@ export function SnippetCard({ snippet }: SnippetCardProps) {
   const [copied, setCopied] = useState(false);
   const [previewCode, setPreviewCode] = useState('');
   const { toast } = useToast();
-  const [isMounted, setIsMounted] = useState(false);
   const { apiKey } = useApiKey();
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTab, setModalTab] = useState<'preview' | 'code'>('preview');
@@ -66,24 +65,49 @@ export function SnippetCard({ snippet }: SnippetCardProps) {
       <body>
         ${bodyContent}
         <script>
-          document.body.addEventListener('click', (e) => {
+          // Prevent all link navigation within the preview
+          document.addEventListener('click', (e) => {
             const link = e.target.closest('a[href]');
             if (link) {
               e.preventDefault();
               e.stopPropagation();
               const href = link.getAttribute('href');
-              if (href && (href.startsWith('http://') || href.startsWith('https://'))) {
-                window.open(href, '_blank');
+              if (href) {
+                // Show a message that links are disabled in preview
+                console.log('Link clicked:', href, '- Links are disabled in preview mode');
+                // Optionally show a visual indicator
+                const originalText = link.textContent;
+                link.textContent = 'Link (disabled in preview)';
+                link.style.color = '#999';
+                link.style.textDecoration = 'line-through';
+                setTimeout(() => {
+                  link.textContent = originalText;
+                  link.style.color = '';
+                  link.style.textDecoration = '';
+                }, 2000);
               }
             }
           }, true);
+
+          // Prevent form submissions
+          document.addEventListener('submit', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Form submission prevented in preview mode');
+          }, true);
+
+          // Prevent window.open calls from user code
+          const originalWindowOpen = window.open;
+          window.open = function(url, target, features) {
+            console.log('window.open prevented in preview mode:', url);
+            return null;
+          };
         </script>
       </body>
     </html>
   `;
   
   useEffect(() => {
-    setIsMounted(true);
     setPreviewCode(createPreviewHtml(code));
   }, []);
 
@@ -157,7 +181,7 @@ export function SnippetCard({ snippet }: SnippetCardProps) {
                 <iframe
                   srcDoc={previewCode}
                   title="Preview"
-                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                  sandbox="allow-scripts allow-same-origin"
                   className="w-full h-full border-0"
                   style={{height: '250px'}}
                 />
@@ -187,26 +211,26 @@ export function SnippetCard({ snippet }: SnippetCardProps) {
         </CardContent>
       </Card>
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-3xl w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-0 overflow-hidden">
-          <div className="flex flex-col h-[80vh]">
-            <div className="flex justify-between items-center px-6 py-4 border-b border-zinc-800 bg-zinc-900">
-              <DialogTitle className="text-xl font-bold text-white">{snippet.title}</DialogTitle>
+        <DialogContent className="max-w-3xl w-[95vw] h-[95vh] sm:h-[80vh] bg-zinc-900 border border-zinc-800 rounded-2xl p-0 overflow-hidden">
+          <div className="flex flex-col h-full">
+            <div className="flex justify-between items-center px-4 sm:px-6 py-4 border-b border-zinc-800 bg-zinc-900">
+              <DialogTitle className="text-lg sm:text-xl font-bold text-white">{snippet.title}</DialogTitle>
               <Button size="icon" variant="ghost" className="text-white hover:bg-zinc-800" onClick={() => setModalOpen(false)}>
                 <span className="sr-only">Close</span>
-                <X className="h-6 w-6" />
+                <X className="h-5 w-5 sm:h-6 sm:w-6" />
               </Button>
             </div>
-            <div className="flex-1 flex flex-col p-6">
+            <div className="flex-1 flex flex-col p-4 sm:p-6">
               <Tabs value={modalTab} onValueChange={v => setModalTab(v as 'preview' | 'code')} className="flex-1 flex flex-col min-h-0">
-                <TabsList className="sticky top-0 z-20 grid w-full grid-cols-2 bg-zinc-800 rounded-full p-1 text-xl font-bold mb-4 shadow-lg">
-                  <TabsTrigger value="preview" className="rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all duration-200"> <Eye className="mr-2 h-5 w-5"/>Preview</TabsTrigger>
-                  <TabsTrigger value="code" className="rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all duration-200"> <Code className="mr-2 h-5 w-5"/>Code</TabsTrigger>
+                <TabsList className="sticky top-0 z-20 grid w-full grid-cols-2 bg-zinc-800 rounded-full p-1 text-base sm:text-xl font-bold mb-4 shadow-lg">
+                  <TabsTrigger value="preview" className="rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all duration-200 text-xs sm:text-base"> <Eye className="mr-1 sm:mr-2 h-3 w-3 sm:h-5 sm:w-5"/>Preview</TabsTrigger>
+                  <TabsTrigger value="code" className="rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all duration-200 text-xs sm:text-base"> <Code className="mr-1 sm:mr-2 h-3 w-3 sm:h-5 sm:w-5"/>Code</TabsTrigger>
                 </TabsList>
                 <TabsContent value="preview" className="flex-1 rounded-md border border-zinc-800 bg-zinc-800 overflow-hidden">
                   <iframe
                     srcDoc={previewCode}
                     title="Preview"
-                    sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                    sandbox="allow-scripts allow-same-origin"
                     className="w-full h-full border-0"
                     style={{height: '50vh'}}
                   />

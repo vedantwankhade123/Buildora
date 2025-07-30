@@ -148,7 +148,6 @@ export default function Home() {
   const panelGroupRef = useRef<ImperativePanelGroupHandle>(null);
   const typingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const generationCancelled = useRef(false);
-  const [isMounted, setIsMounted] = useState(false);
   const isMobile = useIsMobile();
   const [isInputActive, setIsInputActive] = useState(false);
   const user = useSupabaseUser();
@@ -165,6 +164,7 @@ export default function Home() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [selectedSnippet, setSelectedSnippet] = useState<Snippet | null>(null);
   const { apiKey } = useApiKey();
+
 
   const promptSuggestions = [
     'An interactive dashboard for an expense tracker with charts and recent transactions.',
@@ -427,7 +427,6 @@ export default function Home() {
   }, [carouselApi])
 
   useEffect(() => {
-    setIsMounted(true);
     refreshSuggestions();
     return () => {
       if (typingIntervalRef.current) {
@@ -438,15 +437,21 @@ export default function Home() {
 
   useEffect(() => {
     if (files.length > 0 || isTyping) {
-      document.documentElement.classList.add('dark');
-      document.documentElement.classList.remove('on-homepage');
+      if (typeof window !== 'undefined') {
+        document.documentElement.classList.add('dark');
+        document.documentElement.classList.remove('on-homepage');
+      }
     } else {
-      document.documentElement.classList.remove('dark');
-      document.documentElement.classList.add('on-homepage');
+      if (typeof window !== 'undefined') {
+        document.documentElement.classList.remove('dark');
+        document.documentElement.classList.add('on-homepage');
+      }
     }
     return () => {
-      document.documentElement.classList.remove('dark');
-      document.documentElement.classList.remove('on-homepage');
+      if (typeof window !== 'undefined') {
+        document.documentElement.classList.remove('dark');
+        document.documentElement.classList.remove('on-homepage');
+      }
     };
   }, [files.length, isTyping]);
   
@@ -496,17 +501,19 @@ export default function Home() {
                     }
                 }
 
-                const canvas = document.createElement('canvas');
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                if (ctx) {
-                    ctx.drawImage(img, 0, 0, width, height);
-                    const dataUrl = canvas.toDataURL(file.type);
-                    setter(dataUrl);
-                } else {
-                    setter(null);
-                    toast({ variant: 'destructive', title: 'Error', description: 'Could not process image.' });
+                if (typeof window !== 'undefined') {
+                  const canvas = document.createElement('canvas');
+                  canvas.width = width;
+                  canvas.height = height;
+                  const ctx = canvas.getContext('2d');
+                  if (ctx) {
+                      ctx.drawImage(img, 0, 0, width, height);
+                      const dataUrl = canvas.toDataURL(file.type);
+                      setter(dataUrl);
+                  } else {
+                      setter(null);
+                      toast({ variant: 'destructive', title: 'Error', description: 'Could not process image.' });
+                  }
                 }
             };
             if(event.target?.result) {
@@ -745,11 +752,14 @@ export default function Home() {
     });
   }
 
+
+
   return (
-    <div className={cn('h-full', files.length === 0 && !isTyping && 'bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900', 'relative overflow-x-hidden')}
+    <div className={cn('h-full', files.length === 0 && 'bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900', 'relative overflow-x-hidden')}
       >
+
       {/* Enhanced Background with Gradient Overlay */}
-      {files.length === 0 && !isTyping && (
+      {files.length === 0 && (
         <>
           <video
             className="fixed inset-0 w-full h-full object-cover z-0"
@@ -765,7 +775,7 @@ export default function Home() {
         </>
       )}
       {isLoading && <GenerationLoader onCancel={handleCancelGeneration} />}
-        {files.length === 0 && !isTyping ? (
+        {files.length === 0 ? (
             <div className="on-homepage overflow-y-auto h-full text-foreground relative z-10">
               <div className="relative min-h-screen flex flex-col items-center justify-end text-center text-white px-2 sm:px-4 lg:px-8">
                 {/* Enhanced Main Content */}
@@ -807,10 +817,10 @@ export default function Home() {
                                   }}
                                   onBlur={() => setIsInputActive(false)}
                                   rows={2}
-                                  className="bg-white/10 backdrop-blur-sm border-2 border-primary/30 shadow-2xl rounded-3xl text-base sm:text-base text-left text-white placeholder-gray-400 focus-visible:ring-4 focus-visible:ring-primary/30 focus-visible:ring-offset-0 focus-visible:border-primary/60 transition-all duration-300 resize-none p-4 sm:p-6 pb-20 min-h-[120px] sm:min-h-[160px] w-full hover:bg-white/15 hover:border-primary/40"
+                                  className="bg-white/10 backdrop-blur-sm border-2 border-primary/30 shadow-2xl rounded-2xl sm:rounded-3xl text-sm sm:text-base text-left text-white placeholder-gray-400 focus-visible:ring-4 focus-visible:ring-primary/30 focus-visible:ring-offset-0 focus-visible:border-primary/60 transition-all duration-300 resize-none p-3 sm:p-4 md:p-6 pb-16 sm:pb-20 min-h-[100px] sm:min-h-[120px] md:min-h-[160px] w-full hover:bg-white/15 hover:border-primary/40"
                               />
                               {!isInputActive && !description && (
-                                  <div className="absolute top-4 left-4 text-sm sm:text-base text-gray-400 pointer-events-none w-[calc(100%-2rem)] overflow-hidden text-left">
+                                  <div className="absolute top-3 sm:top-4 left-3 sm:left-4 text-xs sm:text-sm md:text-base text-gray-400 pointer-events-none w-[calc(100%-1.5rem)] sm:w-[calc(100%-2rem)] overflow-hidden text-left">
                                       <TypeAnimation
                                           sequence={[
                                               'A pricing page with three tiers...',
@@ -828,21 +838,21 @@ export default function Home() {
                                       />
                                   </div>
                               )}
-                              <div className="absolute bottom-4 left-2 sm:left-4 flex items-center gap-3 flex-wrap">
+                              <div className="absolute bottom-3 sm:bottom-4 left-2 sm:left-4 flex items-center gap-2 sm:gap-3 flex-wrap">
                                 <DropdownMenu onOpenChange={(open) => { if (open) refreshSuggestions(); }}>
                                   <DropdownMenuTrigger asChild>
                                     <Button
                                       variant="outline"
                                       size="sm"
-                                      className="rounded-full bg-white/15 backdrop-blur-sm border-white/30 text-white hover:bg-white/25 hover:text-white hover:border-white/40 px-4 flex items-center group transition-all duration-300 shadow-lg hover:shadow-xl"
+                                      className="rounded-full bg-white/15 backdrop-blur-sm border-white/30 text-white hover:bg-white/25 hover:text-white hover:border-white/40 px-2 sm:px-4 flex items-center group transition-all duration-300 shadow-lg hover:shadow-xl text-xs sm:text-sm"
                                     >
-                                      <Lightbulb className="h-5 w-5 sm:mr-2 text-white transition-colors duration-200" />
+                                      <Lightbulb className="h-4 w-4 sm:h-5 sm:w-5 sm:mr-2 text-white transition-colors duration-200" />
                                       <span className="hidden sm:inline">Build Ideas</span>
                                     </Button>
                                   </DropdownMenuTrigger>
-                                  <DropdownMenuContent className="bg-gray-900/90 backdrop-blur-lg border border-gray-700 text-white rounded-xl shadow-2xl p-2 min-w-[16rem] animate-fade-in-up">
+                                  <DropdownMenuContent className="bg-gray-900/90 backdrop-blur-lg border border-gray-700 text-white rounded-xl shadow-2xl p-2 w-[calc(100vw-2rem)] max-w-[20rem] min-w-[280px] animate-fade-in-up z-50">
                                     {suggestions.map((s, i) => (
-                                      <DropdownMenuItem key={i} onClick={() => handleSuggestionClick(s)} className="cursor-pointer rounded-lg px-3 py-2 transition-colors duration-150 hover:!bg-blue-600/80 hover:!text-white focus:!bg-blue-600/80 focus:!text-white">
+                                      <DropdownMenuItem key={i} onClick={() => handleSuggestionClick(s)} className="cursor-pointer rounded-lg px-3 py-3 text-sm sm:text-base transition-colors duration-150 hover:!bg-blue-600/80 hover:!text-white focus:!bg-blue-600/80 focus:!text-white break-words">
                                         {s}
                                       </DropdownMenuItem>
                                     ))}
@@ -850,47 +860,47 @@ export default function Home() {
                                 </DropdownMenu>
                               </div>
 
-                              <div className="absolute bottom-4 right-2 sm:right-4 flex items-center gap-2 flex-wrap">
+                              <div className="absolute bottom-3 sm:bottom-4 right-2 sm:right-4 flex items-center gap-1 sm:gap-2 flex-wrap">
                                   <input type="file" ref={descFileInputRef} onChange={(e) => handleFileChange(e, setDescriptionImageDataUri)} accept="image/*" className="hidden" />
                                   <Button
                                       size="icon"
                                       variant="ghost"
                                       onClick={() => descFileInputRef.current?.click()}
-                                      className="h-9 w-9 text-gray-300 hover:bg-blue-600 hover:text-white focus:bg-blue-600 focus:text-white transition-colors"
+                                      className="h-8 w-8 sm:h-9 sm:w-9 text-gray-300 hover:bg-blue-600 hover:text-white focus:bg-blue-600 focus:text-white transition-colors"
                                       title="Attach Image"
                                   >
-                                      <Paperclip className="h-5 w-5" />
+                                      <Paperclip className="h-4 w-4 sm:h-5 sm:w-5" />
                                       <span className="sr-only">Attach Image</span>
                                   </Button>
-                                  {isMounted && hasRecognitionSupport && (
+                                  {hasRecognitionSupport && (
                                   <Button
                                       size="icon"
                                       variant={isListening ? 'destructive' : 'ghost'}
                                       onClick={() => isListening ? stopListening() : startListening()}
                                       className={twMerge(
-                                        'h-9 w-9 text-gray-300 transition-colors',
+                                        'h-8 w-8 sm:h-9 sm:w-9 text-gray-300 transition-colors',
                                         isListening ? 'bg-red-600 text-white' : 'hover:bg-blue-600 hover:text-white focus:bg-blue-600 focus:text-white'
                                       )}
                                       title={isListening ? 'Stop listening' : 'Start listening'}
                                   >
-                                      {isListening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+                                      {isListening ? <MicOff className="h-4 w-4 sm:h-5 sm:w-5" /> : <Mic className="h-4 w-4 sm:h-5 sm:w-5" />}
                                       <span className="sr-only">{isListening ? 'Stop listening' : 'Start listening'}</span>
                                   </Button>
                                   )}
-                                  <Button type="button" onClick={() => user ? handleGenerateCode() : setAuthDialogOpen(true)} disabled={isLoading} size="lg" className="bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-600/90 text-white font-bold hidden sm:flex rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 px-8 py-3">
-                                    <Wand2 className="mr-2 h-5 w-5"/>
+                                  <Button type="button" onClick={() => user ? handleGenerateCode() : setAuthDialogOpen(true)} disabled={isLoading} size="lg" className="bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-600/90 text-white font-bold hidden sm:flex rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 px-6 sm:px-8 py-2 sm:py-3 text-sm sm:text-base">
+                                    <Wand2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5"/>
                                     {isLoading ? 'Generating...' : 'Generate'}
                                   </Button>
-                                  <Button type="button" onClick={() => user ? handleGenerateCode() : setAuthDialogOpen(true)} disabled={isLoading} size="icon" className="bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-600/90 text-white font-bold p-3 sm:hidden rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
-                                    <Send className="h-5 w-5" />
+                                  <Button type="button" onClick={() => user ? handleGenerateCode() : setAuthDialogOpen(true)} disabled={isLoading} size="icon" className="bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-600/90 text-white font-bold p-2 sm:p-3 sm:hidden rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
+                                    <Send className="h-4 w-4 sm:h-5 sm:w-5" />
                                   </Button>
                               </div>
                           </div>
                           {descriptionImageDataUri && (
                               <div className="text-left mt-2 text-xs sm:text-sm text-gray-300 bg-black/30 p-1.5 rounded-md flex items-center gap-1 w-fit">
                                   <span className="pl-1">Image attached</span>
-                                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setDescriptionImageDataUri(null)}>
-                                      <X className="h-4 w-4" />
+                                  <Button variant="ghost" size="icon" className="h-5 w-5 sm:h-6 sm:w-6" onClick={() => setDescriptionImageDataUri(null)}>
+                                      <X className="h-3 w-3 sm:h-4 sm:w-4" />
                                   </Button>
                               </div>
                           )}
@@ -1009,14 +1019,14 @@ export default function Home() {
         ) : (
           <div className="h-screen pt-16 flex flex-col">
             {/* Mobile Toggle */}
-            <div className="md:hidden flex items-center justify-center p-3 border-b bg-neutral-900/95 backdrop-blur-sm">
-              <div className="flex bg-neutral-800/50 rounded-2xl p-1.5 shadow-lg border border-neutral-700/50">
+            <div className="md:hidden flex items-center justify-center p-2 sm:p-3 border-b bg-neutral-900/95 backdrop-blur-sm">
+              <div className="flex bg-neutral-800/50 rounded-2xl p-1 sm:p-1.5 shadow-lg border border-neutral-700/50">
                 <Button
                   variant={mobileView === 'input' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setMobileView('input')}
                   className={cn(
-                    "text-xs px-6 py-2.5 rounded-xl font-semibold transition-all duration-300 relative overflow-hidden",
+                    "text-xs px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-semibold transition-all duration-300 relative overflow-hidden",
                     mobileView === 'input' 
                       ? "bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/25 hover:from-blue-700 hover:to-blue-600" 
                       : "text-neutral-300 hover:text-white hover:bg-neutral-700/50"
@@ -1025,8 +1035,8 @@ export default function Home() {
                   {mobileView === 'input' && (
                     <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-blue-600/20 animate-pulse" />
                   )}
-                  <span className="relative z-10 flex items-center gap-2">
-                    <Pencil className="h-3.5 w-3.5" />
+                  <span className="relative z-10 flex items-center gap-1 sm:gap-2">
+                    <Pencil className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                     Input
                   </span>
                 </Button>
@@ -1035,7 +1045,7 @@ export default function Home() {
                   size="sm"
                   onClick={() => setMobileView('code')}
                   className={cn(
-                    "text-xs px-6 py-2.5 rounded-xl font-semibold transition-all duration-300 relative overflow-hidden",
+                    "text-xs px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-semibold transition-all duration-300 relative overflow-hidden",
                     mobileView === 'code' 
                       ? "bg-gradient-to-r from-purple-600 to-purple-500 text-white shadow-lg shadow-purple-500/25 hover:from-purple-700 hover:to-purple-600" 
                       : "text-neutral-300 hover:text-white hover:bg-neutral-700/50"
@@ -1044,8 +1054,8 @@ export default function Home() {
                   {mobileView === 'code' && (
                     <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-purple-600/20 animate-pulse" />
                   )}
-                  <span className="relative z-10 flex items-center gap-2">
-                    <Code className="h-3.5 w-3.5" />
+                  <span className="relative z-10 flex items-center gap-1 sm:gap-2">
+                    <Code className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                     Code
                   </span>
                 </Button>
@@ -1093,7 +1103,7 @@ export default function Home() {
                                         <Paperclip className="h-4 w-4" />
                                         <span className="sr-only">Attach Image</span>
                                     </Button>
-                                    {isMounted && hasRecognitionSupport && (
+                                    {hasRecognitionSupport && (
                                         <Button
                                         size="icon"
                                         variant={isListening ? 'destructive' : 'outline'}
@@ -1218,51 +1228,51 @@ export default function Home() {
             {/* Mobile Layout */}
             <div className="md:hidden flex-1 min-h-0 w-full">
               {mobileView === 'input' ? (
-                <div className="flex h-full flex-col bg-white/10 backdrop-blur-md border border-primary/40 shadow-lg rounded-2xl m-2 p-0 transition-all"
+                <div className="flex h-full flex-col bg-white/10 backdrop-blur-md border border-primary/40 shadow-lg rounded-2xl m-1 sm:m-2 p-0 transition-all"
                      style={{ boxShadow: '0 4px 32px 0 rgba(0,0,0,0.10)', border: '1.5px solid var(--primary, #3b82f6)' }}>
-                  <div className="p-3 space-y-2">
-                    <Label className="font-semibold text-sm">Original Prompt</Label>
-                    <div className="text-xs text-muted-foreground bg-muted p-2 rounded-md max-h-32 overflow-y-auto results-scrollbar">
+                  <div className="p-2 sm:p-3 space-y-2">
+                    <Label className="font-semibold text-xs sm:text-sm">Original Prompt</Label>
+                    <div className="text-xs text-muted-foreground bg-muted p-2 rounded-md max-h-24 sm:max-h-32 overflow-y-auto results-scrollbar">
                       {description}
                     </div>
                   </div>
 
                   <Separator />
 
-                  <div className="p-3 flex flex-col gap-2 flex-1 min-h-0">
-                    <Label htmlFor="enhancement-prompt-mobile" className="font-semibold text-sm shrink-0">What do you want to change?</Label>
+                  <div className="p-2 sm:p-3 flex flex-col gap-2 flex-1 min-h-0">
+                    <Label htmlFor="enhancement-prompt-mobile" className="font-semibold text-xs sm:text-sm shrink-0">What do you want to change?</Label>
                     <div className="relative flex-1">
                       <Textarea
                         id="enhancement-prompt-mobile"
                         placeholder="e.g., 'Change the primary button color to orange' or 'Add a section about our team'"
                         value={enhancementPrompt}
                         onChange={(e) => setEnhancementPrompt(e.target.value)}
-                        className="bg-card pr-20 resize-none text-xs absolute inset-0 h-full w-full"
+                        className="bg-card pr-16 sm:pr-20 resize-none text-xs absolute inset-0 h-full w-full"
                       />
-                      <div className="absolute bottom-2 right-2 flex items-center gap-1">
+                      <div className="absolute bottom-1 sm:bottom-2 right-1 sm:right-2 flex items-center gap-1">
                         <input type="file" ref={enhanceFileInputRef} onChange={(e) => handleFileChange(e, setEnhancementImageDataUri)} accept="image/*" className="hidden" />
                         <Button
                           size="icon"
                           variant="outline"
                           onClick={() => enhanceFileInputRef.current?.click()}
-                          className="h-7 w-7 hover:bg-blue-600 hover:text-white focus:bg-blue-600 focus:text-white transition-colors"
+                          className="h-6 w-6 sm:h-7 sm:w-7 hover:bg-blue-600 hover:text-white focus:bg-blue-600 focus:text-white transition-colors"
                           title="Attach Image"
                         >
-                          <Paperclip className="h-3 w-3" />
+                          <Paperclip className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                           <span className="sr-only">Attach Image</span>
                         </Button>
-                        {isMounted && hasRecognitionSupport && (
+                        {hasRecognitionSupport && (
                           <Button
                             size="icon"
                             variant={isListening ? 'destructive' : 'outline'}
                             onClick={() => isListening ? stopListening() : startListening()}
                             className={twMerge(
-                              'h-7 w-7 transition-colors',
+                              'h-6 w-6 sm:h-7 sm:w-7 transition-colors',
                               isListening ? 'bg-red-600 text-white' : 'hover:bg-blue-600 hover:text-white focus:bg-blue-600 focus:text-white'
                             )}
                             title={isListening ? 'Stop listening' : 'Start listening'}
                           >
-                            {isListening ? <MicOff className="h-3 w-3" /> : <Mic className="h-3 w-3" />}
+                            {isListening ? <MicOff className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> : <Mic className="h-2.5 w-2.5 sm:h-3 sm:w-3" />}
                             <span className="sr-only">{isListening ? 'Stop listening' : 'Start listening'}</span>
                           </Button>
                         )}
@@ -1270,32 +1280,32 @@ export default function Home() {
                     </div>
                   </div>
                   {enhancementImageDataUri && (
-                    <div className="px-3 pb-3 flex items-center gap-2">
+                    <div className="px-2 sm:px-3 pb-2 sm:pb-3 flex items-center gap-2">
                       <div className="text-xs text-muted-foreground bg-muted p-1 rounded-md flex items-center gap-1 w-fit">
                         <span className="pl-1">Image attached</span>
-                        <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => setEnhancementImageDataUri(null)}>
-                          <X className="h-3 w-3" />
+                        <Button variant="ghost" size="icon" className="h-4 w-4 sm:h-5 sm:w-5" onClick={() => setEnhancementImageDataUri(null)}>
+                          <X className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                         </Button>
                       </div>
                     </div>
                   )}
-                  <div className="p-3 border-t bg-background space-y-2">
+                  <div className="p-2 sm:p-3 border-t bg-background space-y-2">
                     {isTyping ? (
                       <Button variant="destructive" onClick={handleStopTyping} className="w-full text-sm">
                         <StopCircle className="mr-2 h-4 w-4" /> Stop Generating
                       </Button>
                     ) : (
-                      <div className="flex flex-row gap-2 w-full">
+                      <div className="flex flex-row gap-1 sm:gap-2 w-full">
                         <Button onClick={handleEnhanceCode} disabled={isLoading || isEnhancing} className="min-w-[44%] px-2 py-2 flex-1 rounded-xl text-xs">
                           {isEnhancing ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Wand2 className="mr-1 h-3 w-3" />}
                           <span>{isEnhancing ? 'Enhancing...' : 'Enhance'}</span>
                         </Button>
-                        <Button variant="outline" onClick={handleResetCode} disabled={isTyping} size="icon" title="Reset Code" className="hover:bg-blue-600 hover:text-white focus:bg-blue-600 focus:text-white rounded-xl h-8 w-8">
-                          <Undo className="h-3 w-3" />
+                        <Button variant="outline" onClick={handleResetCode} disabled={isTyping} size="icon" title="Reset Code" className="hover:bg-blue-600 hover:text-white focus:bg-blue-600 focus:text-white rounded-xl h-7 w-7 sm:h-8 sm:w-8">
+                          <Undo className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                           <span className="sr-only">Reset Code</span>
                         </Button>
-                        <Button variant="outline" onClick={handleNewPrompt} size="icon" title="Start Over" className="hover:bg-blue-600 hover:text-white focus:bg-blue-600 focus:text-white rounded-xl h-8 w-8">
-                          <Pencil className="h-3 w-3" />
+                        <Button variant="outline" onClick={handleNewPrompt} size="icon" title="Start Over" className="hover:bg-blue-600 hover:text-white focus:bg-blue-600 focus:text-white rounded-xl h-7 w-7 sm:h-8 sm:w-8">
+                          <Pencil className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                           <span className="sr-only">Start Over</span>
                         </Button>
                       </div>

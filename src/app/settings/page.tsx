@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, Suspense } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -50,13 +50,12 @@ function PasswordStrengthMeter({ password }: { password: string }) {
   );
 }
 
-function SettingsContent() {
+export default function SettingsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const user = useSupabaseUser();
   const [apiKeyInput, setApiKeyInput] = useState('');
   const { apiKey, saveApiKey, clearApiKey } = useApiKey();
-  const [isMounted, setIsMounted] = useState(false);
   const { toast } = useToast();
   const [imageLoadError, setImageLoadError] = useState(false);
   const [name, setName] = useState(user?.user_metadata?.full_name || '');
@@ -79,7 +78,6 @@ function SettingsContent() {
 
   useEffect(() => {
     if (apiKey) setApiKeyInput(apiKey);
-    setIsMounted(true);
   }, [apiKey]);
 
   useEffect(() => { setImageLoadError(false); }, [user?.user_metadata?.avatar_url]);
@@ -116,9 +114,11 @@ function SettingsContent() {
   };
 
   const handleClearSnippets = () => {
-    const prevSnippets = localStorage.getItem('all-snippets');
+    const prevSnippets = typeof window !== 'undefined' ? localStorage.getItem('all-snippets') : null;
     setLastDeletedSnippets(prevSnippets);
-    localStorage.removeItem('all-snippets');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('all-snippets');
+    }
     toast({
       title: "Component Library Cleared",
       description: (
@@ -131,7 +131,7 @@ function SettingsContent() {
   };
 
   const handleUndoClearSnippets = () => {
-    if (lastDeletedSnippets) {
+    if (lastDeletedSnippets && typeof window !== 'undefined') {
       localStorage.setItem('all-snippets', lastDeletedSnippets);
       setLastDeletedSnippets(null);
       toast({ title: "Undo Successful", description: "Your component library has been restored." });
@@ -197,7 +197,7 @@ function SettingsContent() {
     return 'U';
   }
 
-  if (!isMounted) return null;
+
 
   return (
     <Dialog open={true} onOpenChange={open => { if (!open) router.back(); }}>
@@ -295,25 +295,151 @@ function SettingsContent() {
                     <CardDescription className="text-sm sm:text-base">Customize your app preferences.</CardDescription>
                   </CardHeader>
                   <CardContent className="pt-0 px-3 sm:px-4 md:px-6 pb-4 sm:pb-6">
+                    {/* Development Notice */}
+                    <div className="mb-6 p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg">
+                      <div className="flex items-start gap-3">
+                        <div className="w-2 h-2 bg-blue-400 rounded-full mt-2 animate-pulse"></div>
+                        <div className="flex-1">
+                          <h3 className="text-sm font-semibold text-blue-400 mb-1">Features Under Development</h3>
+                          <p className="text-xs text-zinc-400 leading-relaxed">
+                            We're actively working on these features to enhance your experience. 
+                            Some options may be available soon, while others are in early planning stages.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
                     {/* Notification Preferences */}
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between p-3 sm:p-4 bg-neutral-800/50 rounded-lg">
+                      <div className="relative flex items-center justify-between p-3 sm:p-4 bg-neutral-800/30 rounded-lg border border-zinc-700/50 opacity-60">
                         <div className="flex-1">
-                          <Label htmlFor="notifications-toggle" className="text-sm sm:text-base font-medium">Enable Notifications</Label>
-                          <p className="text-xs sm:text-sm text-zinc-400 mt-1">Choose how and when you want to receive notifications.</p>
+                          <div className="flex items-center gap-2 mb-1">
+                            <Label htmlFor="notifications-toggle" className="text-sm sm:text-base font-medium text-zinc-400">Enable Notifications</Label>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+                              Coming Soon
+                            </span>
+                          </div>
+                          <p className="text-xs sm:text-sm text-zinc-500 mt-1">Choose how and when you want to receive notifications.</p>
                         </div>
-                        <Switch id="notifications-toggle" checked={true} onCheckedChange={() => {}} />
+                        <div className="relative">
+                          <Switch id="notifications-toggle" checked={false} disabled className="opacity-50" />
+                          <div className="absolute inset-0 bg-zinc-800/50 rounded-md pointer-events-none"></div>
+                        </div>
                       </div>
                       
-                      <div className="flex items-center justify-between p-3 sm:p-4 bg-neutral-800/50 rounded-lg">
+                      <div className="relative flex items-center justify-between p-3 sm:p-4 bg-neutral-800/30 rounded-lg border border-zinc-700/50 opacity-60">
                         <div className="flex-1">
-                          <Label htmlFor="dark-mode-toggle" className="text-sm sm:text-base font-medium">Dark Mode</Label>
-                          <p className="text-xs sm:text-sm text-zinc-400 mt-1">Switch between light and dark themes.</p>
+                          <div className="flex items-center gap-2 mb-1">
+                            <Label htmlFor="dark-mode-toggle" className="text-sm sm:text-base font-medium text-zinc-400">Dark Mode</Label>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                              In Development
+                            </span>
+                          </div>
+                          <p className="text-xs sm:text-sm text-zinc-500 mt-1">Switch between light and dark themes.</p>
                         </div>
-                        <Switch id="dark-mode-toggle" checked={true} onCheckedChange={() => {}} />
+                        <div className="relative">
+                          <Switch id="dark-mode-toggle" checked={false} disabled className="opacity-50" />
+                          <div className="absolute inset-0 bg-zinc-800/50 rounded-md pointer-events-none"></div>
+                        </div>
+                      </div>
+
+                      <div className="relative flex items-center justify-between p-3 sm:p-4 bg-neutral-800/30 rounded-lg border border-zinc-700/50 opacity-60">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Label htmlFor="auto-save-toggle" className="text-sm sm:text-base font-medium text-zinc-400">Auto Save</Label>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-500/20 text-purple-400 border border-purple-500/30">
+                              Planned
+                            </span>
+                          </div>
+                          <p className="text-xs sm:text-sm text-zinc-500 mt-1">Automatically save your work as you type.</p>
+                        </div>
+                        <div className="relative">
+                          <Switch id="auto-save-toggle" checked={false} disabled className="opacity-50" />
+                          <div className="absolute inset-0 bg-zinc-800/50 rounded-md pointer-events-none"></div>
+                        </div>
+                      </div>
+
+                      <div className="relative flex items-center justify-between p-3 sm:p-4 bg-neutral-800/30 rounded-lg border border-zinc-700/50 opacity-60">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Label htmlFor="keyboard-shortcuts-toggle" className="text-sm sm:text-base font-medium text-zinc-400">Keyboard Shortcuts</Label>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                              Beta
+                            </span>
+                          </div>
+                          <p className="text-xs sm:text-sm text-zinc-500 mt-1">Enable keyboard shortcuts for faster navigation.</p>
+                        </div>
+                        <div className="relative">
+                          <Switch id="keyboard-shortcuts-toggle" checked={false} disabled className="opacity-50" />
+                          <div className="absolute inset-0 bg-zinc-800/50 rounded-md pointer-events-none"></div>
+                        </div>
+                      </div>
+
+                      <div className="relative flex items-center justify-between p-3 sm:p-4 bg-neutral-800/30 rounded-lg border border-zinc-700/50 opacity-60">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Label htmlFor="language-select" className="text-sm sm:text-base font-medium text-zinc-400">Language</Label>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
+                              Soon
+                            </span>
+                          </div>
+                          <p className="text-xs sm:text-sm text-zinc-500 mt-1">Select your preferred language for the interface.</p>
+                        </div>
+                        <div className="relative">
+                          <Select disabled>
+                            <SelectTrigger className="w-32 bg-zinc-700 border-zinc-600 text-zinc-400 opacity-50">
+                              <SelectValue placeholder="English" />
+                            </SelectTrigger>
+                          </Select>
+                          <div className="absolute inset-0 bg-zinc-800/50 rounded-md pointer-events-none"></div>
+                        </div>
+                      </div>
+
+                      <div className="relative flex items-center justify-between p-3 sm:p-4 bg-neutral-800/30 rounded-lg border border-zinc-700/50 opacity-60">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Label htmlFor="timezone-select" className="text-sm sm:text-base font-medium text-zinc-400">Timezone</Label>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+                              Planned
+                            </span>
+                          </div>
+                          <p className="text-xs sm:text-sm text-zinc-500 mt-1">Set your local timezone for accurate timestamps.</p>
+                        </div>
+                        <div className="relative">
+                          <Select disabled>
+                            <SelectTrigger className="w-40 bg-zinc-700 border-zinc-600 text-zinc-400 opacity-50">
+                              <SelectValue placeholder="UTC" />
+                            </SelectTrigger>
+                          </Select>
+                          <div className="absolute inset-0 bg-zinc-800/50 rounded-md pointer-events-none"></div>
+                        </div>
+                      </div>
+
+                      <div className="relative flex items-center justify-between p-3 sm:p-4 bg-neutral-800/30 rounded-lg border border-zinc-700/50 opacity-60">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Label htmlFor="accessibility-toggle" className="text-sm sm:text-base font-medium text-zinc-400">Accessibility Features</Label>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-pink-500/20 text-pink-400 border border-pink-500/30">
+                              Research
+                            </span>
+                          </div>
+                          <p className="text-xs sm:text-sm text-zinc-500 mt-1">Enable high contrast mode and screen reader support.</p>
+                        </div>
+                        <div className="relative">
+                          <Switch id="accessibility-toggle" checked={false} disabled className="opacity-50" />
+                          <div className="absolute inset-0 bg-zinc-800/50 rounded-md pointer-events-none"></div>
+                        </div>
                       </div>
                     </div>
                   </CardContent>
+                  <CardFooter className="px-3 sm:px-4 md:px-6 pb-4 sm:pb-6 pt-0">
+                    <div className="w-full p-3 bg-zinc-800/30 rounded-lg border border-zinc-700/30">
+                      <div className="flex items-center gap-2 text-xs text-zinc-500">
+                        <div className="w-1.5 h-1.5 bg-zinc-600 rounded-full"></div>
+                        <span>Have a feature request? Let us know what you'd like to see next!</span>
+                      </div>
+                    </div>
+                  </CardFooter>
                 </Card>
               </section>
             )}
@@ -656,13 +782,5 @@ function SettingsContent() {
         </div>
       </DialogContent>
     </Dialog>
-  );
-}
-
-export default function SettingsPage() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <SettingsContent />
-    </Suspense>
   );
 }

@@ -204,11 +204,13 @@ export default function PlaygroundPage() {
   const activeFile = useMemo(() => files.find(file => file.path === activeFilePath), [files, activeFilePath]);
   const fileTree = useMemo(() => buildFileTree(files), [files]);
   useEffect(() => {
-    const theme = localStorage.getItem('theme') || 'dark';
-    document.documentElement.className = theme;
+    const theme = typeof window !== 'undefined' ? localStorage.getItem('theme') || 'dark' : 'dark';
+    if (typeof window !== 'undefined') {
+      document.documentElement.className = theme;
+    }
     setFiles(initialFiles);
     setActiveFilePath('index.html');
-    const hideWelcome = localStorage.getItem('playground_hide_welcome');
+    const hideWelcome = typeof window !== 'undefined' ? localStorage.getItem('playground_hide_welcome') : null;
     setIsWelcomeModalOpen(!hideWelcome);
   }, []);
   useEffect(() => {
@@ -412,9 +414,56 @@ export default function PlaygroundPage() {
               : withCss + injectedScripts;
 
           // Clean up original script/style tags if they exist
-          const finalCleanedHtml = withScripts
+          let finalCleanedHtml = withScripts
               .replace(/<link.*href="style.css".*>/, '')
               .replace(/<script.*src="bundle.js".*><\/script>/, '');
+
+          // Add safety script to prevent navigation and form submissions
+          const safetyScript = `
+            <script>
+              // Prevent all link navigation within the preview
+              document.addEventListener('click', (e) => {
+                const link = e.target.closest('a[href]');
+                if (link) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const href = link.getAttribute('href');
+                  if (href) {
+                    // Show a message that links are disabled in preview
+                    console.log('Link clicked:', href, '- Links are disabled in preview mode');
+                    // Optionally show a visual indicator
+                    const originalText = link.textContent;
+                    link.textContent = 'Link (disabled in preview)';
+                    link.style.color = '#999';
+                    link.style.textDecoration = 'line-through';
+                    setTimeout(() => {
+                      link.textContent = originalText;
+                      link.style.color = '';
+                      link.style.textDecoration = '';
+                    }, 2000);
+                  }
+                }
+              }, true);
+
+              // Prevent form submissions
+              document.addEventListener('submit', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Form submission prevented in preview mode');
+              }, true);
+
+              // Prevent window.open calls from user code
+              const originalWindowOpen = window.open;
+              window.open = function(url, target, features) {
+                console.log('window.open prevented in preview mode:', url);
+                return null;
+              };
+            </script>
+          `;
+          
+          finalCleanedHtml = finalCleanedHtml.includes('</body>')
+              ? finalCleanedHtml.replace('</body>', `${safetyScript}\n</body>`)
+              : finalCleanedHtml + safetyScript;
 
           setSrcDoc(finalCleanedHtml);
       } catch (e: any) {
@@ -491,6 +540,8 @@ export default function PlaygroundPage() {
   }, [files, activeFilePath, itemToDelete]);
   
   const handleDownloadAllFiles = useCallback(async () => {
+      if (typeof window === 'undefined') return;
+      
       const zip = new JSZip();
       files.filter(f => !f.path.endsWith('/.placeholder')).forEach(file => {
           zip.file(file.path, file.content);
@@ -643,6 +694,8 @@ export default function PlaygroundPage() {
 
   // Remove the <Script> component for Babel and use a manual script injection
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     setTranspilerState('loading');
     // Remove any previous Babel script
     const prev = document.getElementById('babel-standalone-script');
@@ -682,6 +735,19 @@ export default function PlaygroundPage() {
       </div>
     );
   }
+
+  const handleDontShowWelcome = (checked: boolean) => {
+    setDontShowWelcome(checked);
+  };
+
+  const handleCloseWelcome = () => {
+    setIsWelcomeModalOpen(false);
+    if (dontShowWelcome && typeof window !== 'undefined') {
+      localStorage.setItem('playground_hide_welcome', '1');
+    } else if (!dontShowWelcome && typeof window !== 'undefined') {
+      localStorage.removeItem('playground_hide_welcome');
+    }
+  };
 
   return (
       <div className="flex flex-col h-screen bg-neutral-900 text-foreground">
@@ -902,7 +968,7 @@ export default function PlaygroundPage() {
                           key={previewKey}
                           srcDoc={srcDoc}
                           title="output"
-                          sandbox="allow-scripts allow-same-origin allow-downloads allow-forms allow-popups"
+                          sandbox="allow-scripts allow-same-origin"
                           className="bg-white shadow-lg transition-all"
                           style={{
                               width: previewDevice === 'desktop' ? '100%' : (previewDevice === 'tablet' ? '768px' : '375px'),
@@ -948,26 +1014,19 @@ export default function PlaygroundPage() {
                   </div>
                   <div className="flex items-center mt-4 gap-3 w-full">
                       <label className="flex items-center gap-2 cursor-pointer select-none text-blue-200">
-                          <input
-                              type="checkbox"
-                              checked={dontShowWelcome}
-                              onChange={e => setDontShowWelcome(e.target.checked)}
-                              className="accent-blue-500 w-4 h-4 rounded"
-                          />
+                                                      <input
+                                type="checkbox"
+                                checked={dontShowWelcome}
+                                onChange={e => handleDontShowWelcome(e.target.checked)}
+                                className="accent-blue-500 w-4 h-4 rounded"
+                            />
                           Don't show again
                       </label>
                       <div className="flex-1" />
-                      <Button
-                          onClick={() => {
-                              setIsWelcomeModalOpen(false);
-                              if (dontShowWelcome) {
-                                  localStorage.setItem('playground_hide_welcome', '1');
-                              } else {
-                                  localStorage.removeItem('playground_hide_welcome');
-                              }
-                          }}
-                          className="bg-blue-700 hover:bg-blue-800 text-white font-bold px-5 py-2 rounded-xl shadow-lg transition-colors border-2 border-blue-500/40"
-                      >
+                                              <Button
+                           onClick={handleCloseWelcome}
+                           className="bg-blue-700 hover:bg-blue-800 text-white font-bold px-5 py-2 rounded-xl shadow-lg transition-colors border-2 border-blue-500/40"
+                        >
                           Start Coding
                       </Button>
                   </div>
@@ -1055,8 +1114,8 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ name, node, files, activeFi
                                     <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                                <DropdownMenuItem onClick={() => rest.handleDeleteItem(path)} className="text-destructive focus:text-destructive hover:bg-red-900/30 focus:bg-red-900/40 hover:text-red-400 focus:text-red-400 transition-colors">
+                            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()} className="w-[calc(100vw-2rem)] max-w-[20rem] min-w-[280px] z-50">
+                                <DropdownMenuItem onClick={() => rest.handleDeleteItem(path)} className="text-destructive focus:text-destructive hover:bg-red-900/30 focus:bg-red-900/40 hover:text-red-400 focus:text-red-400 transition-colors text-sm sm:text-base px-3 py-2">
                                     <Trash2 className="mr-2 h-4 w-4" /> Delete Folder
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -1116,8 +1175,8 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ name, node, files, activeFi
                         <MoreHorizontal className="h-4 w-4" />
                     </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => rest.handleDeleteItem(fileNode.path)} className="text-destructive focus:text-destructive hover:bg-red-900/30 focus:bg-red-900/40 hover:text-red-400 focus:text-red-400 transition-colors">
+                <DropdownMenuContent align="end" className="w-[calc(100vw-2rem)] max-w-[20rem] min-w-[280px] z-50">
+                        <DropdownMenuItem onClick={() => rest.handleDeleteItem(fileNode.path)} className="text-destructive focus:text-destructive hover:bg-red-900/30 focus:bg-red-900/40 hover:text-red-400 focus:text-red-400 transition-colors text-sm sm:text-base px-3 py-2">
                         <Trash2 className="mr-2 h-4 w-4" /> Delete File
                     </DropdownMenuItem>
                 </DropdownMenuContent>

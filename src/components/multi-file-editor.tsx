@@ -201,6 +201,51 @@ export function MultiFileEditor({
       htmlContent = htmlContent.replace('</body>', `${jsInjection}\n</body>`);
     }
 
+    // Add safety script to prevent navigation and form submissions
+    const safetyScript = `
+      <script>
+        // Prevent all link navigation within the preview
+        document.addEventListener('click', (e) => {
+          const link = e.target.closest('a[href]');
+          if (link) {
+            e.preventDefault();
+            e.stopPropagation();
+            const href = link.getAttribute('href');
+            if (href) {
+              // Show a message that links are disabled in preview
+              console.log('Link clicked:', href, '- Links are disabled in preview mode');
+              // Optionally show a visual indicator
+              const originalText = link.textContent;
+              link.textContent = 'Link (disabled in preview)';
+              link.style.color = '#999';
+              link.style.textDecoration = 'line-through';
+              setTimeout(() => {
+                link.textContent = originalText;
+                link.style.color = '';
+                link.style.textDecoration = '';
+              }, 2000);
+            }
+          }
+        }, true);
+
+        // Prevent form submissions
+        document.addEventListener('submit', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('Form submission prevented in preview mode');
+        }, true);
+
+        // Prevent window.open calls from user code
+        const originalWindowOpen = window.open;
+        window.open = function(url, target, features) {
+          console.log('window.open prevented in preview mode:', url);
+          return null;
+        };
+      </script>
+    `;
+    
+    htmlContent = htmlContent.replace('</body>', `${safetyScript}\n</body>`);
+
     return htmlContent;
   };
 
@@ -318,25 +363,25 @@ export function MultiFileEditor({
                   <span className="sr-only">More options</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="w-[calc(100vw-2rem)] max-w-[20rem] min-w-[280px] z-50">
                 {onToggleFileExplorer && (
-                  <DropdownMenuItem onClick={onToggleFileExplorer}>
+                  <DropdownMenuItem onClick={onToggleFileExplorer} className="text-sm sm:text-base px-3 py-2">
                     <FolderOpen className="mr-2 h-4 w-4" /> {fileExplorerOpen ? 'Hide' : 'Show'} Files
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem onClick={() => setDevice('desktop')}>
+                <DropdownMenuItem onClick={() => setDevice('desktop')} className="text-sm sm:text-base px-3 py-2">
                   <Monitor className="mr-2 h-4 w-4" /> Desktop View
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setDevice('tablet')}>
+                <DropdownMenuItem onClick={() => setDevice('tablet')} className="text-sm sm:text-base px-3 py-2">
                   <Tablet className="mr-2 h-4 w-4" /> Tablet View
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setDevice('mobile')}>
+                <DropdownMenuItem onClick={() => setDevice('mobile')} className="text-sm sm:text-base px-3 py-2">
                   <Smartphone className="mr-2 h-4 w-4" /> Mobile View
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleDownload} disabled={isTyping}>
+                <DropdownMenuItem onClick={handleDownload} disabled={isTyping} className="text-sm sm:text-base px-3 py-2">
                   <Download className="mr-2 h-4 w-4" /> Download
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setIsExpanded(!isExpanded)}>
+                <DropdownMenuItem onClick={() => setIsExpanded(!isExpanded)} className="text-sm sm:text-base px-3 py-2">
                   {isExpanded ? <Shrink className="mr-2 h-4 w-4" /> : <Expand className="mr-2 h-4 w-4" />}
                   {isExpanded ? 'Exit' : 'Fullscreen'}
                 </DropdownMenuItem>
@@ -349,6 +394,7 @@ export function MultiFileEditor({
                     }
                   }}
                   disabled={!previewCode}
+                  className="text-sm sm:text-base px-3 py-2"
                 >
                   <ExternalLink className="mr-2 h-4 w-4" /> Open in New Tab
                 </DropdownMenuItem>

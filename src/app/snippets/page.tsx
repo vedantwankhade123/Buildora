@@ -333,14 +333,28 @@ export default function SnippetsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   useEffect(() => {
-    const theme = localStorage.getItem('theme') || 'dark';
-    document.documentElement.className = theme;
-    const storedSnippetsJSON = localStorage.getItem(SNIPPETS_STORAGE_KEY);
+    const theme = typeof window !== 'undefined' ? localStorage.getItem('theme') || 'dark' : 'dark';
+    if (typeof window !== 'undefined') {
+      document.documentElement.className = theme;
+    }
+    
+    const storedSnippetsJSON = typeof window !== 'undefined' ? localStorage.getItem(SNIPPETS_STORAGE_KEY) : null;
     if (storedSnippetsJSON) {
-      setSnippets(JSON.parse(storedSnippetsJSON));
+      try {
+        const storedSnippets = JSON.parse(storedSnippetsJSON);
+        setSnippets(storedSnippets);
+      } catch (error) {
+        console.error('Error parsing stored snippets:', error);
+        setSnippets(sampleSnippets);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(SNIPPETS_STORAGE_KEY, JSON.stringify(sampleSnippets));
+        }
+      }
     } else {
       setSnippets(sampleSnippets);
-      localStorage.setItem(SNIPPETS_STORAGE_KEY, JSON.stringify(sampleSnippets));
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(SNIPPETS_STORAGE_KEY, JSON.stringify(sampleSnippets));
+      }
     }
   }, []);
   const categories = useMemo(() => {

@@ -8,11 +8,7 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  output: 'standalone',
-  trailingSlash: true,
-  serverExternalPackages: ['@prisma/client'],
   images: {
-    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',
@@ -70,28 +66,6 @@ const nextConfig: NextConfig = {
       });
       config.module.rules.push({
         test: /node_modules\/@genkit-ai/,
-        use: 'null-loader',
-      });
-    }
-
-    // Ignore GenKit modules on server side as well
-    config.module.rules.push({
-      test: /node_modules\/@genkit-ai\/firebase/,
-      use: 'null-loader',
-    });
-    config.module.rules.push({
-      test: /node_modules\/@genkit-ai\/core\/lib\/tracing\.js/,
-      use: 'null-loader',
-    });
-
-    // Ignore GenKit modules on server side as well to prevent build issues
-    if (isServer) {
-      config.module.rules.push({
-        test: /node_modules\/@genkit-ai\/firebase/,
-        use: 'null-loader',
-      });
-      config.module.rules.push({
-        test: /node_modules\/@genkit-ai\/core\/lib\/tracing\.js/,
         use: 'null-loader',
       });
     }

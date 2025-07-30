@@ -49,7 +49,7 @@ export function ApiKeyProvider({ children }: { children: ReactNode }) {
   }, []);
   
   const value = {
-    apiKey: isMounted ? apiKey : null,
+    apiKey: apiKey, // Remove the isMounted check to prevent hydration issues
     saveApiKey,
     clearApiKey,
     isUsingUserKey: !!apiKey,

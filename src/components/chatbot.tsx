@@ -432,9 +432,9 @@ export function Chatbot({ files, activeFileName, onFilesUpdate, apiKey }: Chatbo
                                     Suggestions
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start" side="top" className="bg-zinc-900 text-white border border-zinc-800">
+                            <DropdownMenuContent align="start" side="top" className="bg-zinc-900 text-white border border-zinc-800 w-[calc(100vw-2rem)] max-w-[20rem] min-w-[280px] z-50">
                                 {currentSuggestions.map((s, i) => (
-                                    <DropdownMenuItem key={i} onClick={() => handleSendMessage(s)} className="hover:bg-zinc-800 hover:!text-white focus:bg-zinc-800 focus:!text-white">
+                                    <DropdownMenuItem key={i} onClick={() => handleSendMessage(s)} className="hover:bg-zinc-800 hover:!text-white focus:bg-zinc-800 focus:!text-white text-sm sm:text-base break-words px-3 py-2">
                                         {s}
                                     </DropdownMenuItem>
                                 ))}

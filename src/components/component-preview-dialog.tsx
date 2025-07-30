@@ -39,17 +39,43 @@ const createPreviewHtml = (bodyContent: string) => `
     <body>
       ${bodyContent}
       <script>
-        document.body.addEventListener('click', (e) => {
+        // Prevent all link navigation within the preview
+        document.addEventListener('click', (e) => {
           const link = e.target.closest('a[href]');
           if (link) {
             e.preventDefault();
             e.stopPropagation();
             const href = link.getAttribute('href');
-            if (href && (href.startsWith('http://') || href.startsWith('https://'))) {
-              window.open(href, '_blank');
+            if (href) {
+              // Show a message that links are disabled in preview
+              console.log('Link clicked:', href, '- Links are disabled in preview mode');
+              // Optionally show a visual indicator
+              const originalText = link.textContent;
+              link.textContent = 'Link (disabled in preview)';
+              link.style.color = '#999';
+              link.style.textDecoration = 'line-through';
+              setTimeout(() => {
+                link.textContent = originalText;
+                link.style.color = '';
+                link.style.textDecoration = '';
+              }, 2000);
             }
           }
         }, true);
+
+        // Prevent form submissions
+        document.addEventListener('submit', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('Form submission prevented in preview mode');
+        }, true);
+
+        // Prevent window.open calls from user code
+        const originalWindowOpen = window.open;
+        window.open = function(url, target, features) {
+          console.log('window.open prevented in preview mode:', url);
+          return null;
+        };
       </script>
     </body>
   </html>
@@ -85,26 +111,26 @@ export function ComponentPreviewDialog({ isOpen, onOpenChange, snippet }: Compon
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0">
-        <DialogHeader className="p-6 pb-0">
-          <DialogTitle className="text-2xl">{snippet.title}</DialogTitle>
-          <DialogDescription>{snippet.description}</DialogDescription>
+      <DialogContent className="max-w-6xl w-[95vw] h-[95vh] sm:h-[90vh] flex flex-col p-0">
+        <DialogHeader className="p-4 sm:p-6 pb-0">
+          <DialogTitle className="text-lg sm:text-2xl">{snippet.title}</DialogTitle>
+          <DialogDescription className="text-sm sm:text-base">{snippet.description}</DialogDescription>
         </DialogHeader>
-        <Tabs defaultValue="preview" className="flex-1 flex flex-col min-h-0 p-6 pt-2">
-          <div className="flex justify-between items-center mb-2">
-            <TabsList>
-              <TabsTrigger value="preview"><Eye className="mr-2 h-4 w-4" />Preview</TabsTrigger>
-              <TabsTrigger value="code"><Code className="mr-2 h-4 w-4" />Code</TabsTrigger>
+        <Tabs defaultValue="preview" className="flex-1 flex flex-col min-h-0 p-4 sm:p-6 pt-2">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2">
+            <TabsList className="w-full sm:w-auto">
+              <TabsTrigger value="preview" className="text-xs sm:text-sm"><Eye className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />Preview</TabsTrigger>
+              <TabsTrigger value="code" className="text-xs sm:text-sm"><Code className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />Code</TabsTrigger>
             </TabsList>
-            <div className="flex items-center gap-2" data-html2canvas-ignore>
-                <Button onClick={() => setDevice('desktop')} variant={device === 'desktop' ? 'secondary' : 'ghost'} size="icon" title="Desktop View">
-                    <Monitor className="h-5 w-5" />
+            <div className="flex items-center gap-1 sm:gap-2" data-html2canvas-ignore>
+                <Button onClick={() => setDevice('desktop')} variant={device === 'desktop' ? 'secondary' : 'ghost'} size="icon" title="Desktop View" className="h-8 w-8 sm:h-10 sm:w-10">
+                    <Monitor className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
-                <Button onClick={() => setDevice('tablet')} variant={device === 'tablet' ? 'secondary' : 'ghost'} size="icon" title="Tablet View">
-                    <Tablet className="h-5 w-5" />
+                <Button onClick={() => setDevice('tablet')} variant={device === 'tablet' ? 'secondary' : 'ghost'} size="icon" title="Tablet View" className="h-8 w-8 sm:h-10 sm:w-10">
+                    <Tablet className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
-                <Button onClick={() => setDevice('mobile')} variant={device === 'mobile' ? 'secondary' : 'ghost'} size="icon" title="Mobile View">
-                    <Smartphone className="h-5 w-5" />
+                <Button onClick={() => setDevice('mobile')} variant={device === 'mobile' ? 'secondary' : 'ghost'} size="icon" title="Mobile View" className="h-8 w-8 sm:h-10 sm:w-10">
+                    <Smartphone className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
             </div>
           </div>
@@ -113,7 +139,7 @@ export function ComponentPreviewDialog({ isOpen, onOpenChange, snippet }: Compon
                 <iframe
                     srcDoc={createPreviewHtml(snippet.code)}
                     title="Preview"
-                    sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                    sandbox="allow-scripts allow-same-origin"
                     className="border shadow-lg mx-auto transition-all h-full bg-white dark:bg-gray-900"
                     style={{ width: deviceWidths[device] }}
                 />

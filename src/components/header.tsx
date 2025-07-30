@@ -266,8 +266,6 @@ export function Header() {
   const router = useRouter();
   const [mode, setMode] = React.useState<'signin' | 'signup'>('signin');
   const setModeHandler = (mode: 'signin' | 'signup') => setMode(mode);
-  const [mounted, setMounted] = React.useState(false);
-  React.useEffect(() => setMounted(true), []);
   const [imgError, setImgError] = React.useState(false);
   React.useEffect(() => { setImgError(false); }, [user?.user_metadata?.avatar_url]);
 
@@ -305,12 +303,36 @@ export function Header() {
 
   // Check if API key warning should be shown
   useEffect(() => {
-    if (user && !apiKey && !isSettings) {
+    // Check if user has dismissed the warning before
+    let hasDismissedWarning = false;
+    try {
+      hasDismissedWarning = localStorage.getItem('apiKeyWarningDismissed') === 'true';
+    } catch (error) {
+      // localStorage might not be available (SSR, disabled, etc.)
+      console.warn('localStorage not available:', error);
+    }
+    
+    if (user && !apiKey && !isSettings && !hasDismissedWarning) {
       setShowApiKeyWarning(true);
     } else {
       setShowApiKeyWarning(false);
     }
   }, [user, apiKey, isSettings]);
+
+  // Reset dismissed state when user adds an API key or logs out
+  useEffect(() => {
+    try {
+      if (user && apiKey) {
+        localStorage.removeItem('apiKeyWarningDismissed');
+      } else if (!user) {
+        // Clear dismissed state when user logs out
+        localStorage.removeItem('apiKeyWarningDismissed');
+      }
+    } catch (error) {
+      // localStorage might not be available (SSR, disabled, etc.)
+      console.warn('localStorage not available:', error);
+    }
+  }, [user, apiKey]);
 
   // Helper to get initials
   function getInitials(user: any) {
@@ -355,10 +377,8 @@ export function Header() {
   const [authModalOpen, setAuthModalOpen] = React.useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = React.useState(false);
 
-  // Only render header if not on /analyzer and after mounted
-  const shouldShowHeader =
-    mounted &&
-    !pathname.startsWith('/analyzer');
+  // Only render header if not on /analyzer
+  const shouldShowHeader = !pathname.startsWith('/analyzer');
 
   if (!shouldShowHeader) return null;
 
@@ -437,9 +457,7 @@ export function Header() {
                       <AvatarImage src={user.user_metadata?.avatar_url || undefined} alt={user.user_metadata?.full_name || user.email || 'User'} />
                       <AvatarFallback>{getInitials(user)}</AvatarFallback>
                     </Avatar>
-                    {mounted && (
-                      <span className="font-semibold text-white text-base max-w-[120px] truncate hidden lg:block">{user.user_metadata?.full_name || user.email || 'User'}</span>
-                    )}
+                    <span className="font-semibold text-white text-base max-w-[120px] truncate hidden lg:block">{user.user_metadata?.full_name || user.email || 'User'}</span>
                     <svg className="h-4 w-4 text-primary transition-transform duration-200 group-hover:rotate-180" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
                   </button>
                     {open && (
@@ -596,13 +614,13 @@ export function Header() {
       {showApiKeyWarning && (
         <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-40 bg-gradient-to-r from-amber-600 to-orange-600 text-white px-4 py-3 rounded-lg shadow-lg border border-amber-500/30 max-w-md w-full mx-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 flex-1">
-              <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-              <div className="flex flex-col">
-                <span className="text-sm font-medium">Unable to generate code?</span>
-                <span className="text-xs opacity-90">Add your API key to unlock AI features</span>
+                          <div className="flex items-center gap-3 flex-1">
+                <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">Unable to generate code?</span>
+                  <span className="text-xs opacity-90">Add your API key to unlock AI features • Won't show again</span>
+                </div>
               </div>
-            </div>
             <div className="flex items-center gap-2">
               <Button
                 onClick={() => router.push('/settings?section=integrations')}
@@ -611,7 +629,15 @@ export function Header() {
                 Add API Key
               </Button>
               <button
-                onClick={() => setShowApiKeyWarning(false)}
+                onClick={() => {
+                  setShowApiKeyWarning(false);
+                  try {
+                    localStorage.setItem('apiKeyWarningDismissed', 'true');
+                  } catch (error) {
+                    // localStorage might not be available (SSR, disabled, etc.)
+                    console.warn('localStorage not available:', error);
+                  }
+                }}
                 className="text-white/80 hover:text-white p-1 rounded transition-colors duration-200"
               >
                 <X className="h-4 w-4" />

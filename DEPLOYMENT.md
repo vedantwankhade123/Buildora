@@ -1,129 +1,149 @@
-# 🚀 Deploying Buildora to Netlify
+# Dezi-Agent Platform Deployment Guide
 
-This guide will help you deploy your Buildora platform to Netlify.
+## Deploy to Vercel
 
-## Prerequisites
+This guide will help you deploy the Dezi-Agent platform to Vercel, which is the recommended hosting platform for Next.js applications.
 
-- A GitHub account
-- A Netlify account
-- Your Buildora project pushed to GitHub
+### Prerequisites
 
-## Step 1: Prepare Your Repository
+1. **Vercel Account**: Sign up at [vercel.com](https://vercel.com)
+2. **Database**: Set up a PostgreSQL database (recommended: Supabase, Neon, or Railway)
+3. **Environment Variables**: Prepare all required environment variables
 
-1. **Push your code to GitHub** (if not already done):
+### Step 1: Database Setup
+
+You'll need a PostgreSQL database. Recommended options:
+
+#### Option A: Supabase (Recommended)
+1. Go to [supabase.com](https://supabase.com)
+2. Create a new project
+3. Get your database URL from Settings > Database
+4. Run the Prisma migrations:
    ```bash
-   git add .
-   git commit -m "Prepare for Netlify deployment"
-   git push origin main
+   npx prisma db push
    ```
 
-2. **Verify your repository structure**:
-   - `netlify.toml` ✅
-   - `next.config.ts` ✅
-   - `package.json` ✅
+#### Option B: Neon
+1. Go to [neon.tech](https://neon.tech)
+2. Create a new project
+3. Get your database URL from the dashboard
 
-## Step 2: Deploy to Netlify
+### Step 2: Environment Variables
 
-### Option A: Deploy via Netlify UI (Recommended)
+You'll need to set these environment variables in Vercel:
 
-1. **Go to [Netlify](https://netlify.com)** and sign in
-2. **Click "Add new site"** → "Import an existing project"
-3. **Connect to GitHub** and select your Buildora repository
-4. **Configure build settings**:
-   - **Build command**: `npm run build:netlify`
-   - **Publish directory**: `.next/standalone`
-   - **Node version**: `18`
-5. **Click "Deploy site"**
-
-### Option B: Deploy via Netlify CLI
-
-1. **Install Netlify CLI**:
-   ```bash
-   npm install -g netlify-cli
-   ```
-
-2. **Login to Netlify**:
-   ```bash
-   netlify login
-   ```
-
-3. **Deploy your site**:
-   ```bash
-   netlify deploy --prod
-   ```
-
-## Step 3: Configure Environment Variables
-
-After deployment, you'll need to set up your environment variables in Netlify:
-
-1. **Go to your site dashboard** in Netlify
-2. **Navigate to Site settings** → **Environment variables**
-3. **Add the following variables**:
-
-```env
-# Supabase Configuration
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-
-# Google AI API (if using)
-GOOGLE_AI_API_KEY=your_google_ai_api_key
-
-# Other API keys as needed
+#### Required Variables:
+```
+DATABASE_URL=postgresql://username:password@host:port/database
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+GEMINI_API_KEY=your-google-ai-api-key
+NEXTAUTH_SECRET=your-random-secret-key
+NEXTAUTH_URL=https://your-domain.vercel.app
 ```
 
-## Step 4: Configure Custom Domain (Optional)
+#### Optional Variables (if using Stripe):
+```
+STRIPE_SECRET_KEY=your-stripe-secret-key
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=your-stripe-publishable-key
+STRIPE_WEBHOOK_SECRET=your-stripe-webhook-secret
+```
 
-1. **Go to Site settings** → **Domain management**
-2. **Add custom domain** or use the provided Netlify subdomain
-3. **Configure SSL certificate** (automatic with Netlify)
+### Step 3: Deploy to Vercel
 
-## Step 5: Verify Deployment
+#### Method 1: Deploy via Vercel CLI
+1. Install Vercel CLI:
+   ```bash
+   npm i -g vercel
+   ```
 
-1. **Check your site** at the provided Netlify URL
-2. **Test all functionality**:
-   - User authentication
-   - API key management
-   - Code generation
-   - File uploads
-3. **Monitor build logs** for any issues
+2. Login to Vercel:
+   ```bash
+   vercel login
+   ```
 
-## Troubleshooting
+3. Deploy:
+   ```bash
+   vercel --prod
+   ```
 
-### Common Issues:
+#### Method 2: Deploy via GitHub Integration
+1. Push your code to GitHub
+2. Go to [vercel.com](https://vercel.com)
+3. Click "New Project"
+4. Import your GitHub repository
+5. Configure environment variables
+6. Deploy
 
-1. **Build fails**: Check the build logs in Netlify dashboard
-2. **Environment variables not working**: Ensure they're set in Netlify dashboard
-3. **API calls failing**: Verify CORS settings and API endpoints
-4. **Static files not loading**: Check the publish directory path
+### Step 4: Configure Environment Variables in Vercel
 
-### Build Commands:
+1. Go to your Vercel project dashboard
+2. Navigate to Settings > Environment Variables
+3. Add all the required environment variables listed above
+4. Redeploy the project
 
-- **Local build test**: `npm run build:netlify`
-- **Check build output**: Look for `.next/standalone` directory
-- **Verify static files**: Ensure `.next/static` is copied to standalone
+### Step 5: Database Migration
 
-## Performance Optimization
+After deployment, run the database migrations:
 
-1. **Enable Netlify Edge Functions** for better performance
-2. **Configure caching headers** in `netlify.toml`
-3. **Use Netlify's CDN** for global distribution
-4. **Monitor performance** with Netlify Analytics
+1. Go to your Vercel project dashboard
+2. Navigate to Functions > View Function Logs
+3. The Prisma migrations should run automatically during build
 
-## Security
+### Step 6: Verify Deployment
 
-1. **Environment variables** are encrypted in Netlify
-2. **HTTPS** is automatically enabled
-3. **Security headers** are configured in `netlify.toml`
-4. **API keys** should never be committed to Git
+1. Check that your application is running at your Vercel URL
+2. Test the main functionality
+3. Check the function logs for any errors
 
-## Support
+### Troubleshooting
+
+#### Common Issues:
+
+1. **Database Connection Errors**:
+   - Verify your DATABASE_URL is correct
+   - Ensure your database allows connections from Vercel's IP ranges
+   - Check that the database exists and is accessible
+
+2. **Build Errors**:
+   - Check the build logs in Vercel dashboard
+   - Ensure all dependencies are properly installed
+   - Verify TypeScript compilation
+
+3. **Environment Variable Issues**:
+   - Double-check all environment variable names and values
+   - Ensure sensitive variables are not exposed in client-side code
+   - Redeploy after adding new environment variables
+
+#### Performance Optimization:
+
+1. **Database**: Use connection pooling (Prisma Accelerate recommended)
+2. **Images**: Optimize images and use Next.js Image component
+3. **Caching**: Implement proper caching strategies
+4. **CDN**: Vercel automatically provides global CDN
+
+### Monitoring and Analytics
+
+1. **Vercel Analytics**: Enable in your project settings
+2. **Error Tracking**: Set up error monitoring (Sentry recommended)
+3. **Performance Monitoring**: Use Vercel's built-in performance insights
+
+### Security Considerations
+
+1. **Environment Variables**: Never commit sensitive data to version control
+2. **API Keys**: Rotate API keys regularly
+3. **Database**: Use strong passwords and enable SSL connections
+4. **CORS**: Configure CORS properly for your domain
+
+### Support
 
 If you encounter issues:
-1. Check Netlify's [deployment documentation](https://docs.netlify.com/)
-2. Review Next.js [deployment guide](https://nextjs.org/docs/deployment)
-3. Check build logs in Netlify dashboard
+1. Check Vercel's documentation: [vercel.com/docs](https://vercel.com/docs)
+2. Review the build logs in your Vercel dashboard
+3. Check the function logs for runtime errors
 4. Verify all environment variables are set correctly
 
 ---
 
-**Your Buildora platform should now be live on Netlify! 🎉** 
+**Note**: This deployment guide assumes you're using the default Next.js configuration. If you've made custom changes to the build process or configuration, you may need to adjust the deployment steps accordingly. 
