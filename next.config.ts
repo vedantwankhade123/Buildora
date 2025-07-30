@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  experimental: {
+    serverComponentsExternalPackages: ['@genkit-ai/core', '@genkit-ai/googleai', 'genkit'],
+  },
   images: {
     remotePatterns: [
       {
@@ -74,6 +77,12 @@ const nextConfig: NextConfig = {
     // Ignore specific problematic files
     config.module.rules.push({
       test: /node_modules\/@genkit-ai\/core\/lib\/tracing\.js$/,
+      use: 'null-loader',
+    });
+
+    // Ignore any module that might cause createContextKey issues
+    config.module.rules.push({
+      test: /node_modules\/.*createContextKey.*/,
       use: 'null-loader',
     });
 
