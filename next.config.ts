@@ -43,6 +43,7 @@ const nextConfig: NextConfig = {
         'genkit': false,
         '@genkit-ai/core': false,
         '@genkit-ai/googleai': false,
+        '@genkit-ai/next': false,
       };
     }
 
@@ -69,6 +70,12 @@ const nextConfig: NextConfig = {
         use: 'null-loader',
       });
     }
+
+    // Ignore specific problematic files
+    config.module.rules.push({
+      test: /node_modules\/@genkit-ai\/core\/lib\/tracing\.js$/,
+      use: 'null-loader',
+    });
 
     return config;
   },
